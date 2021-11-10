@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "./AutoPump.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IUniswap.sol";
+import "./interfaces/IAutoPump.sol";
 import "./interfaces/IShibaPump.sol";
 import "./interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -62,7 +62,7 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
     IUniswapV2Router02 public constant BISWAP_ROUTER =
         IUniswapV2Router02(0x3a6d8cA21D1CF76F653A67577FA0D27453350dD8);
 
-    AutoPump public autoPump;
+    IAutoPump public autoPump;
 
     address public immutable pancakeV2Pair;
     address public immutable biswapV2Pair;
@@ -79,7 +79,8 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
     constructor(
         string memory name_,
         string memory symbol_,
-        uint totalSupply_
+        uint totalSupply_,
+        address _autoPumpContract
     ) {
         _name = name_;
         _symbol = symbol_;
@@ -97,8 +98,7 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
             BISWAP_ROUTER.WETH()
         );
 
-        autoPump = new AutoPump(address(this));
-        autoPump.transferOwnership(owner());
+        autoPump = IAutoPump(_autoPumpContract);
 
         //exclude owner and this contract from fee
         _isExcludedFromFee[_msgSender()] = true;
@@ -137,11 +137,18 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
         minAmountToSwap = _minAmountToSwap;
     }
 
+    function updateExclusionFromReward(address account, bool status)
+        external
+        onlyOwner
+    {
+        _isExcludedFromFee[account] = status;
+    }
+
     function setAutoPumpContract(address _newAutoPumpContract)
         external
         onlyOwner
     {
-        autoPump = AutoPump(payable(_newAutoPumpContract));
+        autoPump = IAutoPump(_newAutoPumpContract);
     }
 
     /**
@@ -356,8 +363,8 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
         address spender,
         uint amount
     ) internal virtual {
-        require(owner != address(0), "approve from the zero address");
-        require(spender != address(0), "approve to the zero address");
+        require(owner != address(0));
+        require(spender != address(0));
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -382,8 +389,8 @@ contract ShibaPump is Ownable, IShibaPump, IERC20, IERC20Metadata {
         address recipient,
         uint amount
     ) internal virtual {
-        require(sender != address(0), "transfer from the zero address");
-        require(recipient != address(0), "transfer to the zero address");
+        require(sender != address(0));
+        require(recipient != address(0));
 
         require(amount <= maxTxAmount, "Transfer amount > maxTxAmount");
 

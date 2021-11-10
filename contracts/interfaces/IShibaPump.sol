@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-contract IShibaPump {
+interface IShibaPump {
     event SwapAndLiquify(
         uint tokensSwapped,
         uint ethReceived,

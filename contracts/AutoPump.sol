@@ -22,8 +22,7 @@ contract AutoPump is Ownable, IAutoPump {
     IUniswapV2Router02 public constant BISWAP_ROUTER =
         IUniswapV2Router02(0x3a6d8cA21D1CF76F653A67577FA0D27453350dD8);
 
-    constructor(address _token) {
-        token = IERC20(_token);
+    constructor() {
         amountToTrigger = 40 ether;
     }
 
@@ -47,6 +46,10 @@ contract AutoPump is Ownable, IAutoPump {
         }
     }
 
+    function setToken(address _token) external onlyOwner {
+        token = IERC20(_token);
+    }
+
     function setAmountToTrigger(uint _newAmountToTrigger) external onlyOwner {
         amountToTrigger = _newAmountToTrigger;
         emit AmountToTriggerUpdated(_newAmountToTrigger);
@@ -62,7 +65,7 @@ contract AutoPump is Ownable, IAutoPump {
         emit Biswap(status);
     }
 
-    function sellTokens(uint tokenAmount) external onlyOwners {
+    function sellTokens(uint tokenAmount) external override onlyOwners {
         if (_pseudoRandom() == 0) {
             _swapForETH(PANCAKE_ROUTER, tokenAmount);
         } else {
@@ -70,7 +73,7 @@ contract AutoPump is Ownable, IAutoPump {
         }
     }
 
-    function buyTokens(uint ethAmount) external onlyOwners {
+    function buyTokens(uint ethAmount) external override onlyOwners {
         if (_pseudoRandom() == 0) {
             _swapForTokens(PANCAKE_ROUTER, ethAmount);
         } else {
